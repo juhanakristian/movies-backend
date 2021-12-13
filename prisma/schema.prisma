@@ -11,44 +11,25 @@ datasource db {
 }
 
 model Movie {
-  id       Int    @id @default(autoincrement())
-  name     String @unique
+  id       Int      @id @default(autoincrement())
+  name     String   @unique
   year     Int
   genres   String[]
   ageLimit Int
   rating   Int
   synopsis String
 
-  director   Person  @relation("Director", fields: [directorId], references: [id])
+  director   Person   @relation("Director", fields: [directorId], references: [id])
   directorId Int
-  actors     Actor[]
-}
-
-model Actor {
-  id       Int    @id @default(autoincrement())
-  movies   Movie  @relation(fields: [movieId], references: [id])
-  movieId  Int
-  person   Person @relation(fields: [personId], references: [id])
-  personId Int
+  actors     Person[] @relation("Actor")
 }
 
 model Person {
-  id        Int     @id @default(autoincrement())
-  firstName String
-  lastName  String
-  Movie     Movie[] @relation("Director")
-  Actor     Actor[]
-}
+  id              Int     @id @default(autoincrement())
+  firstName       String
+  lastName        String
+  MoviesAsDirector Movie[] @relation("Director")
+  MoviesAsActor   Movie[] @relation("Actor")
 
-// "name": "Avengers: Endgame",
-// "year": 2018,
-// "genres": ["Adventure", "Sci-fi"],
-// "ageLimit": 12,
-// "rating": 4,
-// "actors": [
-//   { "firstName": "Robert", "lastName": " Downey Jr." },
-//   { "firstName": "Chris", "lastName": "Evans" },
-//   { "firstName": "Scarlett", "lastName": "Johansson" }
-// ],
-// "director": { "firstName": "Anthony", "lastName": "Russo" },
-// "synopsis": "After the devastating events of Avengers: Infinity War (2018), the universe is in ruins. With the help of remaining allies, the Avengers assemble once more in order to reverse Thanos' actions and restore balance to the universe."
+  @@unique([firstName, lastName])
+}
