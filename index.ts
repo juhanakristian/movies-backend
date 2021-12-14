@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
+import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -15,6 +16,12 @@ function getList(param: any) {
 
   return param;
 }
+
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN,
+};
+
+app.use(cors(corsOptions));
 
 app.listen(PORT, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
@@ -51,6 +58,7 @@ app.get("/movies", async (req, res) => {
       AND: filters,
     },
   });
+
   return res.json(movies);
 });
 
@@ -104,13 +112,16 @@ app.post("/movies", async (req, res) => {
 app.get("/movies/:id", async (req, res, next) => {
   const id = parseInt(req.params.id);
 
-  if (!id) return next({ error: "Invalid id", statusCode: 400 }); //res.status(400).json({ error: "Invalid id" });
+  if (!id) return next({ error: "Invalid id", statusCode: 400 });
 
   const movie = await prisma.movie.findUnique({
     where: {
       id,
     },
+    include: { actors: true, director: true },
   });
+
+  if (!movie) return next({ error: "Movie not found", statusCode: 404 });
 
   return res.json(movie);
 });
