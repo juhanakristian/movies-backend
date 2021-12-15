@@ -27,6 +27,10 @@ app.listen(PORT, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
 });
 
+app.get("/", (req, res) => {
+  res.send("Hello 👋");
+});
+
 app.get("/movies", async (req, res) => {
   const name = req.query.name;
   const years = getList(req.query.year)
