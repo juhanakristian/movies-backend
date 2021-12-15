@@ -1,9 +1,11 @@
 import express, { NextFunction, Request, Response } from "express";
+import bodyParser from "body-parser";
 import cors from "cors";
 import dotenv from "dotenv";
 dotenv.config();
 
 import { PrismaClient } from "@prisma/client";
+import { nextTick } from "process";
 const prisma = new PrismaClient();
 
 const app = express();
@@ -22,6 +24,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.use(bodyParser.json());
 
 app.listen(PORT, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
@@ -66,51 +69,54 @@ app.get("/movies", async (req, res) => {
   return res.json(movies);
 });
 
-app.post("/movies", async (req, res) => {
-  const { name, year, genres, ageLimit, rating, synopsis, director, actors } =
-    req.body;
+app.post("/movies", async (req, res, next) => {
+  try {
+    const { name, year, genres, ageLimit, rating, synopsis, director, actors } =
+      req.body;
 
-  // TODO: Validate input
-
-  const movie = await prisma.movie.create({
-    data: {
-      name,
-      year,
-      genres,
-      ageLimit,
-      rating,
-      synopsis,
-      actors: {
-        connectOrCreate: [
-          ...actors.map((actor: any) => ({
+    const movie = await prisma.movie.create({
+      data: {
+        name,
+        year,
+        genres,
+        ageLimit,
+        rating,
+        synopsis,
+        actors: {
+          connectOrCreate: [
+            ...actors.map((actor: any) => ({
+              where: {
+                firstName_lastName: {
+                  firstName: actor.firstName,
+                  lastName: actor.lastName,
+                },
+              },
+              create: { firstName: actor.firstName, lastName: actor.lastName },
+            })),
+          ],
+        },
+        director: {
+          connectOrCreate: {
             where: {
               firstName_lastName: {
-                firstName: actor.firstName,
-                lastName: actor.lastName,
+                firstName: director.firstName,
+                lastName: director.lastName,
               },
             },
-            create: { firstName: actor.firstName, lastName: actor.lastName },
-          })),
-        ],
-      },
-      director: {
-        connectOrCreate: {
-          where: {
-            firstName_lastName: {
+            create: {
               firstName: director.firstName,
               lastName: director.lastName,
             },
           },
-          create: {
-            firstName: director.firstName,
-            lastName: director.lastName,
-          },
         },
       },
-    },
-  });
+    });
 
-  return res.json(movie);
+    return res.json(movie);
+  } catch (e) {
+    console.log(e);
+    return next({ error: "Error creating movie", statusCode: 400 });
+  }
 });
 
 app.get("/movies/:id", async (req, res, next) => {
