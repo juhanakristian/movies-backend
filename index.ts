@@ -26,6 +26,17 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
 
+interface Error {
+  error?: string;
+  statusCode?: number;
+}
+
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+  return res
+    .status(err.statusCode || 500)
+    .json({ error: err.error || "Internal server error" });
+});
+
 app.listen(PORT, () => {
   console.log(`⚡️[server]: Server is running at https://localhost:${PORT}`);
 });
@@ -112,7 +123,7 @@ app.post("/movies", async (req, res, next) => {
       },
     });
 
-    return res.json(movie);
+    return res.status(201).json(movie);
   } catch (e) {
     console.log(e);
     return next({ error: "Error creating movie", statusCode: 400 });
@@ -136,13 +147,21 @@ app.get("/movies/:id", async (req, res, next) => {
   return res.json(movie);
 });
 
-interface Error {
-  error?: string;
-  statusCode?: number;
-}
+app.delete("/movies/:id", async (req, res, next) => {
+  const id = parseInt(req.params.id);
 
-app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
-  return res
-    .status(err.statusCode || 500)
-    .json({ error: err.error || "Internal server error" });
+  if (!id) return next({ error: "Invalid id", statusCode: 400 });
+
+  try {
+    const movie = await prisma.movie.delete({
+      where: {
+        id,
+      },
+    });
+
+    return res.json(movie);
+  } catch (e) {
+    console.log(e);
+    return next({ error: "Error deleting movie", statusCode: 400 });
+  }
 });
